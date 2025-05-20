@@ -1,5 +1,6 @@
 import { View, Text, Image, StyleSheet, Pressable, Modal, Alert } from 'react-native';
 import React, { useState } from 'react';
+import { Link } from 'expo-router';
 
 export default function Index() {
   const [loginModalVisible, setLoginModalVisible] = useState(false);
@@ -44,10 +45,10 @@ export default function Index() {
           <View style={styles.modalContent}>
             
             <View >
-              <Pressable onPress={() => Alert.alert('cliquer')} style={styles.modalSubContent}>
-                <Image source={require('../../assets/images/consumidores.png')} style={styles.imagesPerson} />
-                <Text style={styles.subContentText}>Consumidor</Text>
-              </Pressable>
+                <Link href={'/register'} style={styles.modalSubContent}>
+                  <Image source={require('../../assets/images/consumidores.png')} style={styles.imagesPerson} />
+                  <Text style={styles.subContentText}>Consumidor</Text>
+                </Link>
 
               <Pressable onPress={() => Alert.alert('cliquer')} style={styles.modalSubContent}>
                 <Image source={require('../../assets/images/agricultores.png')} style={styles.imagesPerson} />
