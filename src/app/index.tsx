@@ -45,15 +45,20 @@ export default function Index() {
           <View style={styles.modalContent}>
             
             <View >
-                <Link href={'/register'} style={styles.modalSubContent}>
-                  <Image source={require('../../assets/images/consumidores.png')} style={styles.imagesPerson} />
-                  <Text style={styles.subContentText}>Consumidor</Text>
+                <Link href={'/consumidor'}>
+                  <View style={styles.modalSubContent}>
+                    <Image source={require('../../assets/images/consumidores.png')} style={styles.imagesPerson} />
+                    <Text style={styles.subContentText}>Consumidor</Text>
+                  </View>
                 </Link>
 
-              <Pressable onPress={() => Alert.alert('cliquer')} style={styles.modalSubContent}>
-                <Image source={require('../../assets/images/agricultores.png')} style={styles.imagesPerson} />
-                <Text style={styles.subContentText} >Agricultor</Text>
-              </Pressable>
+
+                <Link href={'/agricultor'} >
+                  <View style={styles.modalSubContent}>
+                    <Image source={require('../../assets/images/agricultores.png')} style={styles.imagesPerson} />
+                    <Text style={styles.subContentText} >Agricultor</Text>
+                  </View>
+                </Link>
             </View>
 
             <Pressable style={styles.modalButton} onPress={() => setRegisterModalVisible(false)}>
