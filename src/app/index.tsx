@@ -44,7 +44,7 @@ export default function Index() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             
-            <View >
+            {/* <View style={styles.modalContent}> */}
                 <Link href={'/consumidor'}>
                   <View style={styles.modalSubContent}>
                     <Image source={require('../../assets/images/consumidores.png')} style={styles.imagesPerson} />
@@ -59,7 +59,6 @@ export default function Index() {
                     <Text style={styles.subContentText} >Agricultor</Text>
                   </View>
                 </Link>
-            </View>
 
             <Pressable style={styles.modalButton} onPress={() => setRegisterModalVisible(false)}>
               <Text style={styles.buttonText}>Fechar</Text>
@@ -116,12 +115,14 @@ const styles = StyleSheet.create({
     padding: 24,
     borderRadius: 16,
     alignItems: 'center',
+    marginBottom: 20,
+    display: 'flex',
+    gap: 20,
   },
   modalSubContent: {
     width: 150,
     display: 'flex',
     flexDirection: 'column',
-    marginBottom: 20,
     padding: 10,
     borderRadius: 12,
     backgroundColor: '#C1FF72',
