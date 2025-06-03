@@ -1,6 +1,7 @@
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router'; // Importar router
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable, Image, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Pressable, Image, ScrollView, Alert } from 'react-native';
+import { supabase } from '../lib/supabase'; // Importar o cliente Supabase
 
 export default function ConsumidorRegister() {
   const [name, setName] = useState('');
@@ -9,12 +10,58 @@ export default function ConsumidorRegister() {
   const [cpf, setCpf] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleRegister = () => {
-    // Lógica de cadastro para o consumidor
-    console.log('Cadastro Consumidor:', { name, email, password, cpf, phone, address });
-    // Aqui você pode adicionar a lógica para enviar os dados para o backend
-    // e navegar para a próxima tela após o cadastro
+  const handleRegister = async () => {
+    if (!name || !email || !password || !cpf || !address) {
+        Alert.alert('Erro', 'Por favor, preencha todos os campos obrigatórios.');
+        return;
+      }
+    setLoading(true);
+    try {
+      // 1. Cadastrar o usuário no Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+      });
+
+      if (authError) {
+        throw authError;
+      }
+
+      if (!authData.user) {
+        throw new Error('Usuário não foi criado no Supabase Auth.');
+      }
+
+      // 2. Inserir os dados adicionais na tabela 'profiles'
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: authData.user.id, // Link com o usuário autenticado
+          user_type: 'consumidor',
+          name: name,
+          email: email, // Adicionando email à tabela profiles
+          cpf_cnpj: cpf,
+          phone: phone,
+          address: address,
+        });
+
+      if (profileError) {
+        // Opcional: Tentar deletar o usuário do Auth se a inserção no perfil falhar
+        // await supabase.auth.api.deleteUser(authData.user.id);
+        throw profileError;
+      }
+
+      Alert.alert('Sucesso!', 'Consumidor cadastrado com sucesso. Verifique seu e-mail para confirmação.');
+      // Navegar para uma tela de sucesso ou login
+      router.replace('/'); // Ou para uma tela de "verifique seu email"
+
+    } catch (error: any) {
+      console.error('Erro no cadastro:', error);
+      Alert.alert('Erro no Cadastro', error.message || 'Não foi possível completar o cadastro.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -22,17 +69,17 @@ export default function ConsumidorRegister() {
       <View style={styles.container}>
         <Image source={require('../../assets/images/consumidores.png')} style={styles.imagePerson} />
         <Text style={styles.title}>Cadastre-se como Consumidor</Text>
-        
+
         <TextInput
           style={styles.input}
-          placeholder="Nome Completo"
+          placeholder="Nome Completo *"
           value={name}
           onChangeText={setName}
           autoCapitalize="words"
         />
         <TextInput
           style={styles.input}
-          placeholder="E-mail"
+          placeholder="E-mail *"
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
@@ -40,38 +87,37 @@ export default function ConsumidorRegister() {
         />
         <TextInput
           style={styles.input}
-          placeholder="Senha"
+          placeholder="Senha *"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
         />
         <TextInput
           style={styles.input}
-          placeholder="CPF"
+          placeholder="CPF *"
           value={cpf}
           onChangeText={setCpf}
           keyboardType="numeric"
-          maxLength={11} // Ajuste conforme o formato do CPF
+          maxLength={11}
         />
         <TextInput
           style={styles.input}
-          placeholder="Telefone"
+          placeholder="Telefone (opcional)"
           value={phone}
           onChangeText={setPhone}
           keyboardType="phone-pad"
-          maxLength={15} // Ex: (XX) XXXXX-XXXX
+          maxLength={15}
         />
         <TextInput
           style={styles.input}
-          placeholder="Endereço Completo"
+          placeholder="Endereço Completo *"
           value={address}
           onChangeText={setAddress}
           multiline
-          numberOfLines={3}
         />
-        
-        <Pressable style={styles.button} onPress={handleRegister}>
-          <Text style={styles.buttonText}>Registrar Consumidor</Text>
+
+        <Pressable style={styles.button} onPress={handleRegister} disabled={loading}>
+          <Text style={styles.buttonText}>{loading ? 'Registrando...' : 'Registrar Consumidor'}</Text>
         </Pressable>
 
         <Link href="/" style={styles.link}>Voltar para a Tela Inicial</Link>
@@ -87,10 +133,11 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    justifyContent: 'center', // Centraliza verticalmente
-    alignItems: 'center',     // Centraliza horizontalmente
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: '#C1FF72',
-    padding: 20,
+    paddingVertical: 40, // Adicionado padding vertical
+    paddingHorizontal: 20,
   },
   imagePerson: {
     width: 120,

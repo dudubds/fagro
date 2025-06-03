@@ -1,6 +1,7 @@
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router'; // Importar router
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable, Image, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Pressable, Image, ScrollView, Alert } from 'react-native';
+import { supabase } from '../lib/supabase'; // Importar o cliente Supabase
 
 export default function AgricultorRegister() {
   const [farmName, setFarmName] = useState('');
@@ -9,12 +10,58 @@ export default function AgricultorRegister() {
   const [cnpj, setCnpj] = useState('');
   const [farmAddress, setFarmAddress] = useState('');
   const [productsOffered, setProductsOffered] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleRegister = () => {
-    // Lógica de cadastro para o agricultor
-    console.log('Cadastro Agricultor:', { farmName, email, password, cnpj, farmAddress, productsOffered });
-    // Aqui você pode adicionar a lógica para enviar os dados para o backend
-    // e navegar para a próxima tela após o cadastro
+  const handleRegister = async () => {
+    if (!farmName || !email || !password || !farmAddress || !productsOffered) {
+      Alert.alert('Erro', 'Por favor, preencha todos os campos obrigatórios.');
+      return;
+    }
+    setLoading(true);
+    try {
+      // 1. Cadastrar o usuário no Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+      });
+
+      if (authError) {
+        throw authError;
+      }
+
+      if (!authData.user) {
+        throw new Error('Usuário não foi criado no Supabase Auth.');
+      }
+
+      // 2. Inserir os dados adicionais na tabela 'profiles'
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: authData.user.id, // Link com o usuário autenticado
+          user_type: 'agricultor',
+          name: farmName,
+          email: email, // Adicionando email à tabela profiles
+          cpf_cnpj: cnpj,
+          address: farmAddress,
+          products_offered: productsOffered,
+        });
+
+      if (profileError) {
+        // Opcional: Tentar deletar o usuário do Auth se a inserção no perfil falhar
+        // await supabase.auth.api.deleteUser(authData.user.id); // Cuidado com esta operação
+        throw profileError;
+      }
+
+      Alert.alert('Sucesso!', 'Agricultor cadastrado com sucesso. Verifique seu e-mail para confirmação.');
+      // Navegar para uma tela de sucesso ou login
+      router.replace('/'); // Ou para uma tela de "verifique seu email"
+
+    } catch (error: any) {
+      console.error('Erro no cadastro:', error);
+      Alert.alert('Erro no Cadastro', error.message || 'Não foi possível completar o cadastro.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -22,17 +69,17 @@ export default function AgricultorRegister() {
       <View style={styles.container}>
         <Image source={require('../../assets/images/agricultores.png')} style={styles.imagePerson} />
         <Text style={styles.title}>Cadastre-se como Agricultor</Text>
-        
+
         <TextInput
           style={styles.input}
-          placeholder="Nome da Fazenda/Propriedade"
+          placeholder="Nome da Fazenda/Propriedade *"
           value={farmName}
           onChangeText={setFarmName}
           autoCapitalize="words"
         />
         <TextInput
           style={styles.input}
-          placeholder="E-mail"
+          placeholder="E-mail *"
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
@@ -40,7 +87,7 @@ export default function AgricultorRegister() {
         />
         <TextInput
           style={styles.input}
-          placeholder="Senha"
+          placeholder="Senha *"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
@@ -51,27 +98,25 @@ export default function AgricultorRegister() {
           value={cnpj}
           onChangeText={setCnpj}
           keyboardType="numeric"
-          maxLength={14} // Ajuste conforme o formato do CNPJ
+          maxLength={14}
         />
         <TextInput
           style={styles.input}
-          placeholder="Endereço da Fazenda"
+          placeholder="Endereço da Fazenda *"
           value={farmAddress}
           onChangeText={setFarmAddress}
           multiline
-          numberOfLines={3}
         />
         <TextInput
           style={styles.input}
-          placeholder="Produtos Oferecidos (ex: frutas, legumes, grãos)"
+          placeholder="Produtos Oferecidos (ex: frutas, legumes) *"
           value={productsOffered}
           onChangeText={setProductsOffered}
           multiline
-          numberOfLines={2}
         />
-        
-        <Pressable style={styles.button} onPress={handleRegister}>
-          <Text style={styles.buttonText}>Registrar Agricultor</Text>
+
+        <Pressable style={styles.button} onPress={handleRegister} disabled={loading}>
+          <Text style={styles.buttonText}>{loading ? 'Registrando...' : 'Registrar Agricultor'}</Text>
         </Pressable>
 
         <Link href="/" style={styles.link}>Voltar para a Tela Inicial</Link>
@@ -87,10 +132,11 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    justifyContent: 'center', // Centraliza verticalmente
-    alignItems: 'center',     // Centraliza horizontalmente
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: '#C1FF72',
-    padding: 20,
+    paddingVertical: 40, // Adicionado padding vertical
+    paddingHorizontal: 20,
   },
   imagePerson: {
     width: 120,
